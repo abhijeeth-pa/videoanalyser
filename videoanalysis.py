@@ -41,8 +41,9 @@ webrtc_ctx = webrtc_streamer(
     video_frame_callback=video_frame_callback,
 )
 
-if webrtc_ctx.video_recorder:
-    recorded_video_file = webrtc_ctx.video_recorder.get_file()
+if webrtc_ctx and webrtc_ctx.recorder and webrtc_ctx.recorder.filepath:
+    st.session_state.video_path = webrtc_ctx.recorder.filepath
+
     if recorded_video_file:
         # Save recorded video to session state
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_recorded_video:
