@@ -15,6 +15,8 @@ st.title("🎥 Video Analyzer with AI")
 # Initialize session state
 if "video_path" not in st.session_state:
     st.session_state.video_path = None
+if "video_frames" not in st.session_state:
+    st.session_state.video_frames = []  # Store video frames for saving
 
 # Upload Video Option
 video_file = st.file_uploader("📂 Upload a video", type=["mp4"])
@@ -27,28 +29,35 @@ if video_file:
     st.video(st.session_state.video_path)  # Display uploaded video
 
 # Live Recording (Works in Deployed Environments)
-st.subheader("📹 Record Video (Works in Cloud)")
+st.subheader("📹 Record Video (Cloud-Compatible)")
 
-# Function to process incoming video frames and store them
+# Function to store recorded frames
 def video_frame_callback(frame):
     img = frame.to_ndarray(format="bgr24")  # Convert to NumPy array
+    st.session_state.video_frames.append(img)  # Save frame
     return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 webrtc_ctx = webrtc_streamer(
     key="video_recorder",
-    mode=WebRtcMode.RECVONLY,  # Receiving only (for recording)
-    media_stream_constraints={"video": True, "audio": False},  # Enable video recording
+    mode=WebRtcMode.SENDRECV,  # Enables proper recording
+    media_stream_constraints={"video": True, "audio": False},  # Video only
     video_frame_callback=video_frame_callback,
 )
 
-if webrtc_ctx and webrtc_ctx.recorder and webrtc_ctx.recorder.filepath:
-    st.session_state.video_path = webrtc_ctx.recorder.filepath
+# ✅ Save recorded video once recording stops
+if not webrtc_ctx.state.playing and len(st.session_state.video_frames) > 0:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_recorded_video:
+        import cv2
+        height, width, _ = st.session_state.video_frames[0].shape
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(temp_recorded_video.name, fourcc, 20.0, (width, height))
 
-    if recorded_video_file:
-        # Save recorded video to session state
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_recorded_video:
-            temp_recorded_video.write(recorded_video_file.read())
-            st.session_state.video_path = temp_recorded_video.name
+        for frame in st.session_state.video_frames:
+            out.write(frame)
+
+        out.release()
+        st.session_state.video_path = temp_recorded_video.name
+        st.session_state.video_frames = []  # Reset frames after saving
 
 if st.session_state.video_path:
     st.video(st.session_state.video_path)
