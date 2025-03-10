@@ -5,7 +5,7 @@ import os
 from streamlit_webrtc import webrtc_streamer, WebRtcMode
 
 # Configure Google Gemini AI
-genai.configure(api_key="YOUR_GEMINI_API_KEY")  # Replace with your actual API key
+genai.configure(api_key="AIzaSyChhQb_kDorVIfvz66u6gFO8EsOuYvzGag")  # Replace with your actual API key
 mymodel = genai.GenerativeModel("gemini-1.5-flash")
 mychat = mymodel.start_chat()
 
